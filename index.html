@@ -28,6 +28,12 @@
       0% { transform: rotate(0deg); }
       100% { transform: rotate(360deg); }
     }
+    .upload-progress {
+      background: linear-gradient(90deg, #3b82f6 0%, #60a5fa 100%);
+      height: 4px;
+      border-radius: 2px;
+      transition: width 0.3s ease;
+    }
   </style>
   <style>@view-transition { navigation: auto; }</style>
   <script src="/_sdk/data_sdk.js" type="text/javascript"></script>
@@ -41,6 +47,13 @@
    </div>
    <div id="errorMessage" class="hidden p-4 bg-red-50 border border-red-200 rounded-lg mb-6">
     <p class="text-red-700"></p>
+   </div>
+   <div id="uploadProgress" class="hidden mb-6">
+    <div class="flex justify-between text-sm text-gray-600 mb-2"><span>Mengupload file...</span> <span id="progressText">0%</span>
+    </div>
+    <div class="w-full bg-gray-200 rounded-full h-2">
+     <div id="progressBar" class="upload-progress w-0 h-2 rounded-full"></div>
+    </div>
    </div>
    <form id="schoolForm" class="space-y-6 bg-white p-8 rounded-xl shadow-lg" style="display: none;">
     <div><label for="kabupatenKota" class="block text-sm font-semibold mb-2 text-gray-700">Kabupaten/Kota</label> <select id="kabupatenKota" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" required> <option value="">-- Pilih Kabupaten/Kota --</option> </select>
@@ -389,27 +402,111 @@
       }
     });
 
-    // Submit to Google Sheets function
-    async function submitToGoogleSheets(formData) {
-      // Using Google Apps Script Web App URL for the target spreadsheet
+    // Function to convert file to base64
+    function fileToBase64(file) {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.readAsDataURL(file);
+        reader.onload = () => resolve(reader.result);
+        reader.onerror = error => reject(error);
+      });
+    }
+
+    // Function to update progress
+    function updateProgress(current, total) {
+      const percentage = Math.round((current / total) * 100);
+      document.getElementById('progressText').textContent = `${percentage}%`;
+      document.getElementById('progressBar').style.width = `${percentage}%`;
+    }
+
+    // Submit to Google Sheets function with file upload
+    async function submitToGoogleSheets(formData, files) {
       // GANTI URL INI dengan Web App URL yang Anda dapatkan dari Apps Script
-      const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxud5QhtUxKvc_XvV6RPT-4Po91ZhmQ-wZLhMXLC3ZHLCbwDS4TM_63IVuzWQFEorFV/exec';
+      const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyPxd9zBjL92FztO-HW3hVCY0PGGNX4867sOIGCry2uwcNzYfBGCmK6EGHSqu-u6wRe/exec';
       
       try {
+        // Show progress bar
+        document.getElementById('uploadProgress').classList.remove('hidden');
+        
+        // Convert files to base64
+        const fileData = {};
+        let totalFiles = 0;
+        let processedFiles = 0;
+        
+        // Count total files
+        if (files.serialPhoto) totalFiles++;
+        if (files.bastFile) totalFiles++;
+        if (files.bappFile) totalFiles++;
+        if (files.deliveryPhotos && files.deliveryPhotos.length > 0) totalFiles += files.deliveryPhotos.length;
+        
+        if (files.serialPhoto) {
+          updateProgress(processedFiles, totalFiles);
+          fileData.serialPhoto = {
+            name: files.serialPhoto.name,
+            data: await fileToBase64(files.serialPhoto),
+            type: files.serialPhoto.type
+          };
+          processedFiles++;
+        }
+        
+        if (files.bastFile) {
+          updateProgress(processedFiles, totalFiles);
+          fileData.bastFile = {
+            name: files.bastFile.name,
+            data: await fileToBase64(files.bastFile),
+            type: files.bastFile.type
+          };
+          processedFiles++;
+        }
+        
+        if (files.bappFile) {
+          updateProgress(processedFiles, totalFiles);
+          fileData.bappFile = {
+            name: files.bappFile.name,
+            data: await fileToBase64(files.bappFile),
+            type: files.bappFile.type
+          };
+          processedFiles++;
+        }
+        
+        if (files.deliveryPhotos && files.deliveryPhotos.length > 0) {
+          fileData.deliveryPhotos = [];
+          for (let i = 0; i < files.deliveryPhotos.length; i++) {
+            updateProgress(processedFiles, totalFiles);
+            const photo = files.deliveryPhotos[i];
+            fileData.deliveryPhotos.push({
+              name: photo.name,
+              data: await fileToBase64(photo),
+              type: photo.type
+            });
+            processedFiles++;
+          }
+        }
+        
+        updateProgress(totalFiles, totalFiles);
+        
+        const payload = {
+          formData: formData,
+          files: fileData
+        };
+        
         const response = await fetch(SCRIPT_URL, {
           method: 'POST',
-          mode: 'no-cors',
           headers: {
             'Content-Type': 'application/json',
           },
-          body: JSON.stringify(formData)
+          body: JSON.stringify(payload)
         });
         
-        // Since mode is 'no-cors', we can't read the response
-        // We'll assume success if no error is thrown
-        return { success: true };
+        const result = await response.json();
+        
+        // Hide progress bar
+        document.getElementById('uploadProgress').classList.add('hidden');
+        
+        return { success: result.status === 'success', data: result };
       } catch (error) {
         console.error('Error submitting to Google Sheets:', error);
+        document.getElementById('uploadProgress').classList.add('hidden');
         return { success: false, error: error.message };
       }
     }
@@ -422,7 +519,7 @@
       
       // Show loading state
       submitBtn.disabled = true;
-      submitBtn.innerHTML = '<div class="loading-spinner inline-block mr-2"></div>Mengirim...';
+      submitBtn.innerHTML = '<div class="loading-spinner inline-block mr-2"></div>Mengupload file...';
       
       // Collect form data
       const formData = {
@@ -433,15 +530,19 @@
         namaSatuan: document.getElementById('namaSatuan').value,
         namaPenanggungJawab: document.getElementById('namaPenanggungJawab').value,
         noTelp: document.getElementById('noTelp').value,
-        serialNumber: document.getElementById('serialNumber').value,
-        serialPhoto: document.getElementById('serialPhoto').files[0]?.name || '',
-        deliveryPhotos: Array.from(document.getElementById('deliveryPhotos').files).map(f => f.name).join(', '),
-        bastFile: document.getElementById('bastFile').files[0]?.name || '',
-        bappFile: document.getElementById('bappFile').files[0]?.name || ''
+        serialNumber: document.getElementById('serialNumber').value
       };
       
-      // Submit to Google Sheets
-      const result = await submitToGoogleSheets(formData);
+      // Collect files
+      const files = {
+        serialPhoto: document.getElementById('serialPhoto').files[0] || null,
+        bastFile: document.getElementById('bastFile').files[0] || null,
+        bappFile: document.getElementById('bappFile').files[0] || null,
+        deliveryPhotos: Array.from(document.getElementById('deliveryPhotos').files)
+      };
+      
+      // Submit to Google Sheets with files
+      const result = await submitToGoogleSheets(formData, files);
       
       // Reset button state
       submitBtn.disabled = false;
@@ -449,7 +550,11 @@
       
       if (result.success) {
         const successMsg = document.getElementById('successMessage');
-        successMsg.querySelector('p').textContent = '✓ Data berhasil dikirim ke spreadsheet!';
+        let message = '✓ Data dan file berhasil diupload ke Google Drive!';
+        if (result.data && result.data.folderLink) {
+          message += `<br>📁 <a href="${result.data.folderLink}" target="_blank" class="text-blue-600 underline">Lihat file di Google Drive</a>`;
+        }
+        successMsg.querySelector('p').innerHTML = message;
         successMsg.classList.remove('hidden');
         
         setTimeout(() => {
@@ -462,11 +567,11 @@
           document.getElementById('deliveryPhotosInfo').classList.add('hidden');
           document.getElementById('bastFileInfo').classList.add('hidden');
           document.getElementById('bappFileInfo').classList.add('hidden');
-        }, 3000);
+        }, 7000);
       } else {
         // Show error message
         const errorMsg = document.getElementById('errorMessage');
-        errorMsg.querySelector('p').textContent = 'Gagal mengirim data. Silakan coba lagi.';
+        errorMsg.querySelector('p').textContent = result.error || 'Gagal mengirim data. Silakan coba lagi.';
         errorMsg.classList.remove('hidden');
         
         setTimeout(() => {
@@ -580,5 +685,5 @@
 
     loadSpreadsheetData();
   </script>
- <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'99947874e674fcee',t:'MTc2MjI2MzA3NC4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+ <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9994991fa420f8fc',t:'MTc2MjI2NDQxMi4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
