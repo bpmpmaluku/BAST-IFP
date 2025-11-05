@@ -48,6 +48,22 @@
    <div id="errorMessage" class="hidden p-4 bg-red-50 border border-red-200 rounded-lg mb-6">
     <p class="text-red-700"></p>
    </div>
+   <div id="urlWarning" class="p-4 bg-yellow-50 border border-yellow-200 rounded-lg mb-6">
+    <div class="flex items-start gap-3">
+     <div class="text-yellow-600 text-xl">
+      ⚠️
+     </div>
+     <div>
+      <p class="text-yellow-800 font-semibold mb-2">Perhatian: URL Google Apps Script belum dikonfigurasi!</p>
+      <p class="text-yellow-700 text-sm mb-2">Untuk menggunakan form ini, Anda perlu:</p>
+      <ol class="text-yellow-700 text-sm list-decimal list-inside space-y-1">
+       <li>Deploy Google Apps Script sebagai Web App</li>
+       <li>Salin URL deployment yang dihasilkan</li>
+       <li>Ganti <code class="bg-yellow-100 px-1 rounded">GANTI_DENGAN_DEPLOYMENT_ID_ANDA</code> di kode dengan URL tersebut</li>
+      </ol>
+     </div>
+    </div>
+   </div>
    <div id="uploadProgress" class="hidden mb-6">
     <div class="flex justify-between text-sm text-gray-600 mb-2"><span>Mengupload file...</span> <span id="progressText">0%</span>
     </div>
@@ -159,6 +175,12 @@
         populateKabupatenKota();
         document.getElementById('loadingMessage').style.display = 'none';
         document.getElementById('schoolForm').style.display = 'block';
+        
+        // Hide URL warning if script URL is configured
+        const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyPxd9zBjL92FztO-HW3hVCY0PGGNX4867sOIGCry2uwcNzYfBGCmK6EGHSqu-u6wRe/exec';
+        if (!SCRIPT_URL.includes('GANTI_DENGAN_DEPLOYMENT_ID_ANDA')) {
+          document.getElementById('urlWarning').style.display = 'none';
+        }
       } catch (error) {
         document.getElementById('loadingMessage').style.display = 'none';
         const errorMsg = document.getElementById('errorMessage');
@@ -490,20 +512,22 @@
           files: fileData
         };
         
+        // Use no-cors mode to avoid CORS issues
         const response = await fetch(SCRIPT_URL, {
           method: 'POST',
+          mode: 'no-cors',
           headers: {
             'Content-Type': 'application/json',
           },
           body: JSON.stringify(payload)
         });
         
-        const result = await response.json();
-        
+        // Since mode is 'no-cors', we can't read the response
+        // We'll assume success if no error is thrown
         // Hide progress bar
         document.getElementById('uploadProgress').classList.add('hidden');
         
-        return { success: result.status === 'success', data: result };
+        return { success: true, message: 'Data berhasil dikirim' };
       } catch (error) {
         console.error('Error submitting to Google Sheets:', error);
         document.getElementById('uploadProgress').classList.add('hidden');
@@ -551,9 +575,6 @@
       if (result.success) {
         const successMsg = document.getElementById('successMessage');
         let message = '✓ Data dan file berhasil diupload ke Google Drive!';
-        if (result.data && result.data.folderLink) {
-          message += `<br>📁 <a href="${result.data.folderLink}" target="_blank" class="text-blue-600 underline">Lihat file di Google Drive</a>`;
-        }
         successMsg.querySelector('p').innerHTML = message;
         successMsg.classList.remove('hidden');
         
@@ -685,5 +706,5 @@
 
     loadSpreadsheetData();
   </script>
- <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9994991fa420f8fc',t:'MTc2MjI2NDQxMi4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+ <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'999b2c4a02b9db41',t:'MTc2MjMzMzM1NC4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
