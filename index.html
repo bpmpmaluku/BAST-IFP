@@ -3,7 +3,7 @@
  <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Form Data Sekolah</title>
+  <title>Form Pengumpulan BAST &amp; BAPP IFP</title>
   <script src="/_sdk/element_sdk.js"></script>
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
@@ -29,19 +29,50 @@
       100% { transform: rotate(360deg); }
     }
     .upload-progress {
-      background: linear-gradient(90deg, #3b82f6 0%, #60a5fa 100%);
+      background: linear-gradient(90deg, #1DE2E8 0%, #19A5E3 100%);
       height: 4px;
       border-radius: 2px;
       transition: width 0.3s ease;
+    }
+    
+    /* Custom hover styles */
+    select:hover, input:hover {
+      border-color: #1DE2E8 !important;
+    }
+    
+    select:focus, input:focus {
+      border-color: #1DE2E8 !important;
+      box-shadow: 0 0 0 3px rgba(29, 226, 232, 0.1) !important;
+    }
+    
+    /* File input button styling */
+    input[type="file"]::-webkit-file-upload-button {
+      background-color: #1DE2E8 !important;
+      color: white !important;
+      border: none !important;
+      padding: 8px 16px !important;
+      border-radius: 8px !important;
+      font-weight: 600 !important;
+      cursor: pointer !important;
+      transition: background-color 0.2s ease !important;
+    }
+    
+    input[type="file"]::-webkit-file-upload-button:hover {
+      background-color: #19A5E3 !important;
     }
   </style>
   <style>@view-transition { navigation: auto; }</style>
   <script src="/_sdk/data_sdk.js" type="text/javascript"></script>
  </head>
- <body class="min-h-full p-8">
-  <div class="max-w-2xl mx-auto">
-   <h1 id="formTitle" class="text-3xl font-bold mb-2 text-center">Form Data Sekolah</h1>
-   <p class="text-gray-600 text-center mb-8">Silakan lengkapi data sekolah di bawah ini</p>
+ <body class="min-h-full p-8" style="background: linear-gradient(135deg, #1DE2E8 0%, #19A5E3 100%);">
+  <div class="max-w-4xl mx-auto"><!-- Header Image -->
+   <div class="mb-6 text-center"><img src="https://i.imgur.com/y5VImI4.png" alt="Header Kemendikbud" class="w-full max-w-4xl mx-auto rounded-lg shadow-lg" onerror="this.src=''; this.alt='Header image failed to load'; this.style.display='none';">
+   </div><!-- Title Section -->
+   <div class="text-center mb-8">
+    <h1 id="formTitle" class="text-3xl font-bold mb-4 text-gray-800">Form Pengumpulan BAST &amp; BAPP IFP</h1>
+    <div class="w-24 h-1 bg-blue-600 mx-auto rounded-full"></div>
+    <p class="text-gray-600 text-sm mt-4">Silakan lengkapi data sekolah dan upload dokumen yang diperlukan</p>
+   </div>
    <div id="loadingMessage" class="flex items-center justify-center gap-3 p-4 bg-blue-50 rounded-lg mb-6">
     <div class="loading-spinner"></div><span class="text-blue-700">Memuat data dari spreadsheet...</span>
    </div>
@@ -101,20 +132,76 @@
       </div>
       <div id="deliveryPhotosList" class="space-y-1"></div>
      </div>
-    </div><button type="submit" id="submitBtn" class="w-full py-3 px-6 rounded-lg font-semibold text-white bg-blue-600 hover:bg-blue-700 transition-colors"> Kirim Data </button>
+    </div><button type="submit" id="submitBtn" class="w-full py-3 px-6 rounded-lg font-semibold text-white transition-colors" style="background-color: #1DE2E8;"> Kirim Data </button>
     <div id="successMessage" class="hidden p-4 bg-green-50 border border-green-200 rounded-lg">
      <p class="text-green-700 text-center font-semibold">✓ Data berhasil dikirim!</p>
     </div>
-   </form>
+   </form><!-- Loading Popup Modal -->
+   <div id="loadingModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+    <div class="bg-white rounded-xl p-8 max-w-md mx-4 text-center shadow-2xl">
+     <div class="loading-spinner mx-auto mb-4" style="width: 48px; height: 48px; border-width: 4px;"></div>
+     <h3 class="text-xl font-bold mb-2 text-gray-800">Harap Bersabar</h3>
+     <p class="text-gray-600 mb-4">Data Anda sedang dalam proses pengiriman ke server. Mohon jangan menutup halaman ini.</p>
+     <div class="text-sm text-blue-600 font-medium"><span id="modalProgressText">Memproses data...</span>
+     </div>
+    </div>
+   </div>
   </div>
   <script>
+    // Disable right-click context menu
+    document.addEventListener('contextmenu', function(e) {
+      e.preventDefault();
+      return false;
+    });
+    
+    // Disable F12, Ctrl+Shift+I, Ctrl+U, and other developer shortcuts
+    document.addEventListener('keydown', function(e) {
+      // F12
+      if (e.keyCode === 123) {
+        e.preventDefault();
+        return false;
+      }
+      // Ctrl+Shift+I (Developer Tools)
+      if (e.ctrlKey && e.shiftKey && e.keyCode === 73) {
+        e.preventDefault();
+        return false;
+      }
+      // Ctrl+U (View Source)
+      if (e.ctrlKey && e.keyCode === 85) {
+        e.preventDefault();
+        return false;
+      }
+      // Ctrl+Shift+C (Inspect Element)
+      if (e.ctrlKey && e.shiftKey && e.keyCode === 67) {
+        e.preventDefault();
+        return false;
+      }
+      // Ctrl+Shift+J (Console)
+      if (e.ctrlKey && e.shiftKey && e.keyCode === 74) {
+        e.preventDefault();
+        return false;
+      }
+    });
+    
+    // Disable text selection (optional - uncomment if needed)
+    // document.addEventListener('selectstart', function(e) {
+    //   e.preventDefault();
+    //   return false;
+    // });
+    
+    // Disable drag and drop (optional - uncomment if needed)
+    // document.addEventListener('dragstart', function(e) {
+    //   e.preventDefault();
+    //   return false;
+    // });
+
     const defaultConfig = {
-      background_color: "#f0f9ff",
+      background_color: "linear-gradient(135deg, #1DE2E8 0%, #19A5E3 100%)",
       surface_color: "#ffffff",
       text_color: "#1f2937",
-      primary_action_color: "#3b82f6",
+      primary_action_color: "#1DE2E8",
       secondary_action_color: "#6b7280",
-      form_title: "Form Data Sekolah",
+      form_title: "Form Pengumpulan BAST & BAPP IFP",
       submit_button_text: "Kirim Data",
       font_family: "system-ui",
       font_size: 16
@@ -417,6 +504,55 @@
       const percentage = Math.round((current / total) * 100);
       document.getElementById('progressText').textContent = `${percentage}%`;
       document.getElementById('progressBar').style.width = `${percentage}%`;
+      
+      // Update modal progress text
+      const modalProgressText = document.getElementById('modalProgressText');
+      if (current === 0) {
+        modalProgressText.textContent = 'Memproses data...';
+      } else if (current < total) {
+        modalProgressText.textContent = `Mengupload file ${current} dari ${total}...`;
+      } else {
+        modalProgressText.textContent = 'Mengirim ke server...';
+      }
+    }
+
+    // Function to show loading modal
+    function showLoadingModal() {
+      document.getElementById('loadingModal').classList.remove('hidden');
+      document.body.style.overflow = 'hidden'; // Prevent scrolling
+    }
+
+    // Function to hide loading modal
+    function hideLoadingModal() {
+      document.getElementById('loadingModal').classList.add('hidden');
+      document.body.style.overflow = 'auto'; // Restore scrolling
+    }
+
+    // Function to show success modal
+    function showSuccessModal() {
+      const modal = document.getElementById('loadingModal');
+      const modalContent = modal.querySelector('.bg-white');
+      
+      // Update modal content to success message
+      modalContent.innerHTML = `
+        <div class="text-center">
+          <div class="w-16 h-16 mx-auto mb-4 bg-green-100 rounded-full flex items-center justify-center">
+            <svg class="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+            </svg>
+          </div>
+          <h3 class="text-xl font-bold mb-2 text-gray-800">Terimakasih</h3>
+          <p class="text-gray-600 mb-6">Data Anda sudah terkirim</p>
+          <button onclick="hideLoadingModal()" class="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+            Tutup
+          </button>
+        </div>
+      `;
+      
+      // Auto close after 3 seconds
+      setTimeout(() => {
+        hideLoadingModal();
+      }, 3000);
     }
 
     // Submit to Google Sheets function with file upload
@@ -425,7 +561,8 @@
       const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxv0VEdNhBmlaQEEnVKYrXk6GT10_U7TOVpNbxiXKoNazFzz7vDUHVuzgB1fNNK1eM7/exec';
       
       try {
-        // Show progress bar
+        // Show loading modal and progress bar
+        showLoadingModal();
         document.getElementById('uploadProgress').classList.remove('hidden');
         
         // Convert files to base64
@@ -505,10 +642,14 @@
         // Hide progress bar
         document.getElementById('uploadProgress').classList.add('hidden');
         
+        // Show success message in modal
+        showSuccessModal();
+        
         return { success: true, message: 'Data berhasil dikirim' };
       } catch (error) {
         console.error('Error submitting to Google Sheets:', error);
         document.getElementById('uploadProgress').classList.add('hidden');
+        hideLoadingModal();
         return { success: false, error: error.message };
       }
     }
@@ -585,7 +726,14 @@
       const baseSize = config.font_size || defaultConfig.font_size;
       
       document.body.style.fontFamily = `${customFont}, ${baseFontStack}`;
-      document.body.style.backgroundColor = config.background_color || defaultConfig.background_color;
+      const bgColor = config.background_color || defaultConfig.background_color;
+      if (bgColor.includes('gradient')) {
+        document.body.style.background = bgColor;
+        document.body.style.backgroundColor = '';
+      } else {
+        document.body.style.backgroundColor = bgColor;
+        document.body.style.background = '';
+      }
       
       const formTitle = document.getElementById('formTitle');
       formTitle.textContent = config.form_title || defaultConfig.form_title;
@@ -611,6 +759,14 @@
       submitBtn.textContent = config.submit_button_text || defaultConfig.submit_button_text;
       submitBtn.style.backgroundColor = config.primary_action_color || defaultConfig.primary_action_color;
       submitBtn.style.fontSize = `${baseSize}px`;
+      
+      // Add hover effect for submit button
+      submitBtn.onmouseenter = () => {
+        submitBtn.style.backgroundColor = '#19A5E3';
+      };
+      submitBtn.onmouseleave = () => {
+        submitBtn.style.backgroundColor = config.primary_action_color || defaultConfig.primary_action_color;
+      };
       
       const description = document.querySelector('p.text-gray-600');
       description.style.fontSize = `${baseSize}px`;
@@ -684,5 +840,5 @@
 
     loadSpreadsheetData();
   </script>
- <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'999c9c4750458746',t:'MTc2MjM0ODQyNy4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+ <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'999cd9ec671afda3',t:'MTc2MjM1MDk1Mi4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
